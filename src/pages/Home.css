@@ -1,0 +1,16 @@
+.home-grid { display: grid; gap: var(--space-6) var(--space-4); }
+.home-grid--categories { grid-template-columns: repeat(2, 1fr); }
+.home-grid--products { grid-template-columns: repeat(2, 1fr); }
+.home-grid > li { display: flex; }
+.home-grid > li > * { flex: 1; }
+.home-featured { background: linear-gradient(180deg, var(--white), var(--silver-100) 50%, var(--white)); }
+.home-featured__more { display: flex; justify-content: center; margin-top: var(--space-7); }
+
+@media (min-width: 720px) {
+  .home-grid--products { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .home-grid { gap: var(--space-7) var(--space-5); }
+  .home-grid--categories { grid-template-columns: repeat(4, 1fr); }
+  .home-grid--products { grid-template-columns: repeat(4, 1fr); }
+}

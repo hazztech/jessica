@@ -1,0 +1,67 @@
+/* ==========================================================
+   Jessica's design tokens — derived from the approved logo
+   ========================================================== */
+:root {
+  /* Brand color */
+  --mint-400: #4FCDBB;   /* primary mint/aqua — accents, glows, borders */
+  --teal-600: #07877C;   /* deep teal — brand color */
+  --teal-700: #067A70;   /* button fill (passes WCAG AA with white text) */
+  --teal-800: #05665E;   /* teal text on white, dark panels */
+  --mint-100: #DDF8F3;   /* soft mint surfaces */
+  --mint-50:  #F1FBF9;   /* faintest mint wash */
+  --silver-300: #C9CDD1; /* borders, dividers */
+  --silver-200: #DCDFE2;
+  --silver-100: #EFF1F2; /* light silver surfaces */
+  --ink: #252525;        /* charcoal text */
+  --ink-soft: #565B60;   /* secondary text (AA on white) */
+  --white: #FFFFFF;
+
+  /* Type */
+  --font-serif: "Bodoni Moda", "Bodoni 72", Didot, "Times New Roman", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-script: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+
+  /* Modular scale (1.25) */
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.25rem);
+  --fs-2xl: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --fs-script: clamp(3.4rem, 2rem + 6vw, 6.75rem);
+
+  /* Space */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 6.5rem;
+
+  /* Shape — the arch is the signature, taken from the logo's heart frame */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+  --radius-arch: 999px 999px var(--radius-md) var(--radius-md);
+
+  /* Depth */
+  --glow-mint: 0 10px 30px -12px rgba(7, 135, 124, 0.38);
+  --lift: 0 16px 34px -20px rgba(37, 37, 37, 0.3);
+  --hairline: 1px solid var(--silver-300);
+
+  /* Layout */
+  --container: 1240px;
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+  --header-h: 72px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 220ms;
+}
+@media (min-width: 960px) {
+  :root { --header-h: 92px; }
+}
