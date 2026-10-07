@@ -1,0 +1,37 @@
+.how__steps { position: relative; display: grid; gap: var(--space-6); max-width: 30rem; margin-inline: auto; }
+/* the ribbon that ties the steps together */
+.how__steps::before {
+  content: '';
+  position: absolute;
+  left: 27px; top: 28px; bottom: 28px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--mint-400), var(--silver-300));
+}
+.how__step { position: relative; display: grid; align-content: start; grid-template-columns: 56px 1fr; column-gap: var(--space-4); }
+.how__num {
+  grid-row: span 2;
+  position: relative;
+  display: grid; place-items: center;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--mint-400);
+  box-shadow: 0 0 0 5px var(--white), 0 0 0 6px var(--silver-200);
+  font-family: var(--font-serif);
+  font-size: var(--fs-md);
+  color: var(--teal-800);
+}
+.how__step h3 { font-size: var(--fs-lg); align-self: end; }
+.how__step p { color: var(--ink-soft); margin-top: var(--space-1); }
+
+@media (min-width: 900px) {
+  .how__steps { grid-template-columns: repeat(4, 1fr); max-width: none; gap: var(--space-5); }
+  .how__steps::before {
+    left: 12.5%; right: 12.5%; top: 28px; bottom: auto;
+    width: auto; height: 2px;
+    background: linear-gradient(90deg, var(--silver-300), var(--mint-400), var(--silver-300));
+  }
+  .how__step { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .how__num { grid-row: auto; margin-bottom: var(--space-4); }
+  .how__step p { max-width: 24ch; }
+}

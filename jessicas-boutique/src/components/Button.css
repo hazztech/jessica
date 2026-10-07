@@ -1,0 +1,70 @@
+.btn {
+  --btn-bg: var(--teal-700);
+  --btn-fg: var(--white);
+  --btn-border: var(--teal-700);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 1.6rem;
+  border: 1.5px solid var(--btn-border);
+  border-radius: var(--radius-pill);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  isolation: isolate;
+  transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease),
+    color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+/* Shimmer sweep — the "sparkle" moment on hover */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 700ms var(--ease);
+}
+.btn:hover::after { transform: translateX(120%); }
+.btn:hover { box-shadow: var(--glow-mint); }
+.btn:active { transform: translateY(1px); }
+
+.btn--primary:hover { --btn-bg: var(--teal-800); --btn-border: var(--teal-800); }
+
+.btn--secondary {
+  --btn-bg: var(--white);
+  --btn-fg: var(--teal-800);
+  --btn-border: var(--mint-400);
+}
+.btn--secondary:hover { --btn-bg: var(--mint-50); }
+.btn--secondary::after { background: linear-gradient(110deg, transparent 30%, rgba(79, 205, 187, 0.22) 50%, transparent 70%); }
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--teal-800);
+  --btn-border: transparent;
+  padding-inline: var(--space-3);
+}
+.btn--ghost:hover { --btn-bg: var(--mint-50); box-shadow: none; }
+
+.btn--light {
+  --btn-bg: var(--white);
+  --btn-fg: var(--teal-800);
+  --btn-border: var(--white);
+}
+.btn--light:hover { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25), 0 12px 28px -12px rgba(0, 0, 0, 0.4); }
+
+.btn--sm { min-height: 44px; padding-inline: 1.1rem; font-size: var(--fs-xs); }
+.btn--lg { min-height: 54px; padding-inline: 2rem; font-size: var(--fs-base); }
+.btn--full { width: 100%; }
+.btn[disabled] { opacity: 0.5; pointer-events: none; }
