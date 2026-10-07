@@ -5,15 +5,15 @@ import './CategoryCard.css';
 export default function CategoryCard({ category }) {
   const to = `/shop?category=${category.slug}`;
   return (
-    <article className="ccard">
-      <Link to={to} className="ccard__media" tabIndex={-1} aria-hidden="true">
+    <Link to={to} className="ccard" aria-label={`Shop ${category.name}`}>
+      <span className="ccard__media">
         <ProductImage image={category.image} category={category.id} shape="portrait" />
-      </Link>
-      <div className="ccard__body">
-        <h3 className="ccard__name">{category.name}</h3>
-        <p className="ccard__desc">{category.description}</p>
-        <Link to={to} className="ccard__cta" aria-label={`Shop ${category.name}`}>SHOP NOW</Link>
-      </div>
-    </article>
+      </span>
+      <span className="ccard__body">
+        <span className="ccard__name">{category.name}</span>
+        <span className="ccard__desc">{category.description}</span>
+        <span className="ccard__cta">Shop Now</span>
+      </span>
+    </Link>
   );
 }

@@ -2,8 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: saturate(1.4) blur(10px);
+  background: var(--white);
   border-bottom: 1px solid transparent;
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
@@ -25,11 +24,12 @@
 
 .logo-link { display: inline-block; border-radius: var(--radius-sm); }
 .logo--header {
-  width: 88px;
+  width: 80px;
   height: auto;
   transition: width var(--dur) var(--ease);
 }
-.is-scrolled .logo--header { width: 78px; }
+.is-scrolled .logo--header { width: 72px; }
+@media (min-width: 600px) { .logo--header { width: 92px; } .is-scrolled .logo--header { width: 82px; } }
 
 .count-badge {
   position: absolute;
@@ -60,8 +60,9 @@
   min-height: 44px;
   padding: 0 var(--space-2);
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 400;
   font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -70,8 +71,8 @@
   position: absolute;
   left: 50%;
   bottom: 6px;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   background: var(--mint-400);
   transform: translateX(-50%) rotate(45deg) scale(0);
   transition: transform var(--dur) var(--ease);
@@ -85,10 +86,10 @@
 }
 @media (min-width: 960px) {
   .site-header__inner { grid-template-columns: auto 1fr auto; gap: var(--space-5); }
-  .site-header__menu { display: none; }
+  .site-header .site-header__menu { display: none; }
   .site-header__nav { display: block; justify-self: center; }
-  .logo--header { width: 116px; }
-  .is-scrolled .logo--header { width: 96px; }
+  .logo--header { width: 150px; }
+  .is-scrolled .logo--header { width: 118px; }
 }
 
 /* Mobile navigation drawer */
@@ -106,7 +107,7 @@
 }
 .nav-list--vertical .nav-link::after { left: auto; right: var(--space-2); bottom: 50%; transform: translateY(50%) rotate(45deg) scale(0); }
 .nav-list--vertical .nav-link.is-active::after { transform: translateY(50%) rotate(45deg) scale(1); }
-.mobile-nav__rule { margin-block: var(--space-5); }
+.mobile-nav__rule { margin-block: var(--space-5); display: flex; justify-content: center; }
 .mobile-nav__secondary { display: grid; gap: var(--space-1); }
 .mobile-nav__secondary a {
   display: flex; align-items: center; gap: var(--space-3);
@@ -147,3 +148,14 @@
 .search__thumb { border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--silver-100); }
 .search__price { color: var(--ink-soft); font-size: var(--fs-sm); }
 .search__empty { margin-top: var(--space-5); display: grid; gap: var(--space-2); color: var(--ink-soft); }
+
+/* Phones: hamburger · logo · search + cart. Cart is always visible. */
+@media (max-width: 959px) {
+  .site-header__inner { grid-template-columns: 44px 1fr auto; gap: var(--space-1); }
+  .site-header__brand { justify-self: center; }
+  .site-header__tools { gap: 0; }
+}
+@media (max-width: 599px) {
+  .site-header__inner { grid-template-columns: 88px 1fr 88px; }
+  .site-header__tools { justify-content: flex-end; }
+}

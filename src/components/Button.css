@@ -14,9 +14,9 @@
   background: var(--btn-bg);
   color: var(--btn-fg);
   font-family: var(--font-sans);
-  font-weight: 600;
+  font-weight: 500;
   font-size: var(--fs-sm);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
@@ -31,7 +31,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
   transform: translateX(-120%);
   transition: transform 700ms var(--ease);
 }

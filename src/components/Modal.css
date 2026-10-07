@@ -58,3 +58,22 @@
 @keyframes modal-right { from { transform: translateX(100%); } }
 @keyframes modal-left { from { transform: translateX(-100%); } }
 @keyframes modal-top { from { transform: translateY(-100%); } }
+
+/* Bottom sheet — native-feeling drawer on phones, side drawer on large screens */
+.modal--sheet { align-items: flex-end; }
+.modal--sheet .modal__panel {
+  width: 100%; max-height: 88vh; max-height: 88dvh;
+  border-radius: 22px 22px 0 0;
+  animation: modal-top-sheet 300ms var(--ease);
+}
+.modal--sheet .modal__head { position: relative; padding-top: var(--space-5); }
+.modal--sheet .modal__head::before {
+  content: ''; position: absolute; top: 8px; left: 50%; width: 40px; height: 4px; margin-left: -20px;
+  border-radius: 2px; background: var(--silver-300);
+}
+@keyframes modal-top-sheet { from { transform: translateY(100%); } }
+@media (min-width: 768px) {
+  .modal--sheet { align-items: stretch; justify-content: flex-start; }
+  .modal--sheet .modal__panel { width: min(420px, 100%); max-height: none; height: 100%; border-radius: 0; animation: modal-left 280ms var(--ease); }
+  .modal--sheet .modal__head::before { content: none; }
+}

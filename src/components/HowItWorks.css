@@ -15,10 +15,10 @@
   width: 56px; height: 56px;
   border-radius: 50%;
   background: var(--white);
-  border: 1.5px solid var(--mint-400);
+  border: 1px solid var(--mint-400);
   box-shadow: 0 0 0 5px var(--white), 0 0 0 6px var(--silver-200);
   font-family: var(--font-serif);
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
   color: var(--teal-800);
 }
 .how__step h3 { font-size: var(--fs-lg); align-self: end; }
@@ -29,7 +29,7 @@
   .how__steps::before {
     left: 12.5%; right: 12.5%; top: 28px; bottom: auto;
     width: auto; height: 2px;
-    background: linear-gradient(90deg, var(--mint-400), var(--silver-300), var(--mint-400));
+    background: linear-gradient(90deg, var(--silver-300), var(--mint-400), var(--silver-300));
   }
   .how__step { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .how__num { grid-row: auto; margin-bottom: var(--space-4); }

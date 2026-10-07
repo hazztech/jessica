@@ -1,25 +1,25 @@
-.values { border-block: 1px solid var(--silver-200); background: var(--white); }
-.values__list { display: grid; grid-template-columns: repeat(2, 1fr); }
+.values { background: var(--white); }
+.values__list {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  border-block: 1px solid var(--silver-200);
+}
 .values__item {
-  display: flex; align-items: center; gap: var(--space-3);
+  display: flex; align-items: center; justify-content: center; gap: var(--space-2);
   padding: var(--space-4) var(--space-2);
+  text-align: left;
 }
-.values__icon {
-  flex: none; display: grid; place-items: center;
-  width: 42px; height: 42px; border-radius: 50%;
-  background: var(--mint-50); color: var(--teal-800);
-  box-shadow: inset 0 0 0 1px var(--mint-100);
-}
-/* Uppercase per the brand brief */
+.values__icon { flex: none; color: var(--teal-600); display: grid; }
+/* Uppercase per the brand brief, kept small and airy */
 .values__text {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  line-height: 1.35;
+  line-height: 1.4;
+  color: var(--ink);
 }
 @media (min-width: 900px) {
   .values__list { grid-template-columns: repeat(4, 1fr); }
-  .values__item { justify-content: center; padding-block: var(--space-5); }
+  .values__item { padding-block: var(--space-5); }
   .values__item + .values__item { border-left: 1px solid var(--silver-200); }
 }

@@ -1,5 +1,6 @@
 import { Link } from '../lib/router.jsx';
 import Logo from './Logo.jsx';
+import Ornament from './Ornament.jsx';
 import { categories } from '../data/categories.js';
 import './Footer.css';
 
@@ -7,7 +8,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="site-footer">
-      <hr className="stone-rule" />
+      <div className="site-footer__orn"><Ornament /></div>
       <div className="container site-footer__grid">
         <div className="site-footer__brand">
           <Logo size="footer" />

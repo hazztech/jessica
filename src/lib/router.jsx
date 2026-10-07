@@ -21,11 +21,12 @@ export function Router({ children }) {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const navigate = useCallback((to, { replace = false } = {}) => {
+  /** navigate(to, { replace, scroll }) — scroll:false keeps position (e.g. filter changes) */
+  const navigate = useCallback((to, { replace = false, scroll = true } = {}) => {
     const method = replace ? 'replaceState' : 'pushState';
     window.history[method](null, '', to);
     setLoc(readLocation());
-    window.scrollTo({ top: 0 });
+    if (scroll) window.scrollTo({ top: 0 });
   }, []);
 
   const value = useMemo(

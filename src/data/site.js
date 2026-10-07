@@ -34,3 +34,19 @@ export const testimonials = [
   { quote: 'I sent one screenshot and she turned it into the tumbler I’d been picturing for months.',
     name: 'Sample Customer', detail: 'Photo tumbler' },
 ];
+
+import { photo } from './photos.js';
+
+/**
+ * Hero photography: one large arched photo plus small accent cards so the
+ * hero always shows a mix of products (not only shoes). Set to null to use
+ * the built-in illustrated flat-lay instead.
+ */
+export const heroPhotos = {
+  main: photo('black-pearl-bow-high-tops', 'Black pearl and crystal high-top sneakers with a rhinestone bow'),
+  accents: [
+    { image: photo('birthday-shirt-skirt-set', 'Personalized birthday shirt and pleated skirt'), label: 'Outfits', to: '/shop?category=outfits' },
+    { image: photo('pearl-chain-statement-tie', 'Pearl and chain statement tie'), label: 'Ties', to: '/shop?category=ties' },
+    { image: photo('personalized-ombre-tumbler', 'Personalized ombré tumbler'), label: 'Tumblers', to: '/shop?category=tumblers' },
+  ],
+};

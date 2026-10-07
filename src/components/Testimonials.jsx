@@ -1,15 +1,13 @@
 import { testimonials } from '../data/site.js';
 import { QuoteIcon } from './icons.jsx';
+import SectionHead from './SectionHead.jsx';
 import './Testimonials.css';
 
 export default function Testimonials({ items = testimonials }) {
   return (
-    <section className="section testimonials" aria-labelledby="t-title">
+    <section className="section section--mint testimonials" aria-labelledby="t-title">
       <div className="container">
-        <header className="section-head">
-          <span className="script section-head__accent" aria-hidden="true">kind words</span>
-          <h2 id="t-title">Loved by Our Customers</h2>
-        </header>
+        <SectionHead id="t-title" title="Loved by Our Customers" />
         <ul role="list" className="testimonials__list">
           {items.map((t, i) => (
             <li key={i}>

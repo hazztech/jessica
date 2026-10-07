@@ -1,6 +1,7 @@
 import Modal from './Modal.jsx';
 import Navigation from './Navigation.jsx';
 import Logo from './Logo.jsx';
+import Ornament from './Ornament.jsx';
 import Button from './Button.jsx';
 import { Link } from '../lib/router.jsx';
 import { HeartIcon, UserIcon } from './icons.jsx';
@@ -10,7 +11,7 @@ export default function MobileNav({ open, onClose }) {
     <Modal open={open} onClose={onClose} title="Menu" hideTitle variant="left" className="mobile-nav">
       <div className="mobile-nav__logo"><Logo linked={false} /></div>
       <Navigation vertical onNavigate={onClose} />
-      <hr className="stone-rule mobile-nav__rule" />
+      <div className="mobile-nav__rule"><Ornament /></div>
       <div className="mobile-nav__secondary">
         <Link to="/account" onClick={onClose}><UserIcon size={20} /> Account</Link>
         <Link to="/wishlist" onClick={onClose}><HeartIcon size={20} /> Wishlist</Link>
