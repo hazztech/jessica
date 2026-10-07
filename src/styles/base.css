@@ -18,10 +18,10 @@ button { cursor: pointer; }
 a { color: var(--teal-800); text-underline-offset: 3px; }
 h1, h2, h3, h4 {
   font-family: var(--font-serif);
-  font-weight: 500;
-  line-height: 1.12;
+  font-weight: 400;
+  line-height: 1.15;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 p { margin: 0; }
 :where(ul[role="list"], ol[role="list"]) { list-style: none; margin: 0; padding: 0; }
@@ -64,11 +64,13 @@ main:focus { outline: none; }
 }
 
 /* Section rhythm */
-.section { padding-block: var(--space-8); }
-.section-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-7); }
-.section-head__accent { display: block; font-size: clamp(1.9rem, 1.4rem + 2vw, 2.6rem); margin-bottom: var(--space-1); }
+.section { padding-block: var(--space-9); }
+.section--mint { background: var(--mint-50); }
+.section-head { text-align: center; max-width: 40rem; margin: 0 auto var(--space-7); display: grid; justify-items: center; }
 .section-head h2 { font-size: var(--fs-2xl); }
-.section-head p { margin-top: var(--space-3); color: var(--ink-soft); font-size: var(--fs-md); }
+.section-head__ornament { margin-top: var(--space-4); }
+.section-head p { margin-top: var(--space-4); color: var(--ink-soft); font-size: var(--fs-base); max-width: 46ch; }
+@media (max-width: 599px) { .section { padding-block: var(--space-8); } }
 
 /* A row of set rhinestones — echoes the logo's heart frame */
 .stone-rule {
@@ -102,3 +104,4 @@ main:focus { outline: none; }
 }
 /* page-level loading spacer */
 .page-loading { min-height: 70vh; }
+.visually-hidden { left: 0; top: 0; }

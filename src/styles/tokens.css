@@ -56,12 +56,15 @@
   /* Layout */
   --container: 1240px;
   --gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
-  --header-h: 72px;
+  --header-h: 68px;
 
   /* Motion */
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --dur: 220ms;
 }
 @media (min-width: 960px) {
-  :root { --header-h: 92px; }
+  :root { --header-h: 124px; }
+}
+@media (min-width: 600px) and (max-width: 959px) {
+  :root { --header-h: 76px; }
 }
