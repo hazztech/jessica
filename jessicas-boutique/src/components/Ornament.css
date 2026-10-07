@@ -1,8 +1,0 @@
-.ornament { display: inline-flex; align-items: center; gap: var(--space-3); }
-.ornament__line {
-  width: clamp(40px, 8vw, 72px);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--silver-300));
-}
-.ornament__line:last-child { background: linear-gradient(90deg, var(--silver-300), transparent); }
-.crystal-heart { flex: none; filter: drop-shadow(0 1px 1px rgba(7, 135, 124, 0.25)); }
