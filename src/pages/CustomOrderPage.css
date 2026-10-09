@@ -223,3 +223,4 @@
   .review__rows div { grid-template-columns: 1fr; gap: 0; }
   .review__section { padding: var(--space-4); }
 }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

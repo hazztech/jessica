@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from '../lib/router.jsx';
-import { getCustomRequest } from '../services/customRequests.js';
+import { getSubmittedRequest } from '../services/customRequests.js';
 import { getCategory } from '../data/categories.js';
 import { CONTACT_METHODS } from '../data/customRequestForm.js';
 import { CrystalHeart } from '../components/Ornament.jsx';
@@ -16,7 +16,7 @@ export default function CustomOrderSuccess() {
 
   useEffect(() => {
     let live = true;
-    getCustomRequest(ref).then((r) => live && setRequest(r));
+    getSubmittedRequest(ref).then((r) => live && setRequest(r));
     return () => { live = false; };
   }, [ref]);
 

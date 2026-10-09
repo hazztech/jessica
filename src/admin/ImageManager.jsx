@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import { resizeImage } from '../lib/imageResize.js';
+import { uploadPublicImage } from '../services/storage.js';
 import { checkFile } from '../lib/uploadStore.js';
 import { CameraIcon } from '../components/icons.jsx';
 
 const ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Upload, order, caption and remove photos. value: [{ url, alt, width, height, fileName, ... }] */
-export default function ImageManager({ value, onChange, max = 10, label = 'Photos', altHint }) {
+export default function ImageManager({ value, onChange, max = 10, label = 'Photos', altHint, bucket = 'product-images' }) {
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState([]);
@@ -21,10 +21,10 @@ export default function ImageManager({ value, onChange, max = 10, label = 'Photo
     for (const f of list) {
       const problem = checkFile(f, { accept: ACCEPT, maxSizeMB: 15 });
       if (problem) { errs.push(problem); continue; }
-      try { added.push({ ...(await resizeImage(f)), alt: '' }); } catch {
+      try { added.push({ ...(await uploadPublicImage(bucket, f)), alt: '' }); } catch (err) {
         errs.push(/\.hei[cf]$/i.test(f.name)
           ? `“${f.name}” is an iPhone HEIC photo this browser can’t open. Export it as JPG, or set iPhone Camera → Formats → Most Compatible.`
-          : `“${f.name}” couldn’t be read.`);
+          : err?.message || `“${f.name}” couldn’t be read.`);
       }
     }
     setBusy(false);

@@ -7,6 +7,7 @@ import {
 import { applyChange, cleanSelections, defaultValues, summarize, validate } from '../lib/customization.js';
 import { load, save } from '../lib/storage.js';
 import { submitCustomRequest } from '../services/customRequests.js';
+import { MissingFilesError } from '../services/uploads.js';
 import { useToast } from '../context/ToastContext.jsx';
 import FormStepper from '../components/FormStepper.jsx';
 import ItemTypePicker from '../components/ItemTypePicker.jsx';
@@ -47,6 +48,7 @@ export default function CustomOrderPage() {
   });
   const [errors, setErrors] = useState({ type: '', answers: {}, details: {} });
   const [submitting, setSubmitting] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
   const headingRef = useRef(null);
   const firstRender = useRef(true);
 
@@ -136,52 +138,13 @@ export default function CustomOrderPage() {
     }
     setSubmitting(true);
     try {
-      const vision = cleanSelections(visionFields, answers);
-      const common = cleanSelections(commonDetailFields, answers);
-      const budget = cleanSelections(budgetFields, answers);
-      const contact = cleanSelections(contactFields, answers);
-      const cleanDetails = Object.fromEntries(
-        itemTypes.map((cat) => [cat, cleanSelections(requestDetailFields(cat), details[cat] || {})])
-      );
-      const detailSummary = itemTypes.map((cat) => ({
-        category: cat,
-        items: summarize(requestDetailFields(cat), cleanDetails[cat]),
-      }));
-      const request = await submitCustomRequest({
-        itemTypes,
-        occasion: vision.occasion || null,
-        styleTheme: vision.styleTheme || null,
-        colors: vision.colors || [],
-        colorNotes: vision.colorNotes || '',
-        description: vision.description,
-        personalization: common.names || '',
-        designElements: common.designElements || [],
-        quantity: Number(common.quantity || 1),
-        additionalRequests: common.additionalRequests || '',
-        sizes: detailSummary.flatMap((d) =>
-          d.items.filter((r) => /size/i.test(r.fieldId)).map((r) => ({ category: d.category, label: r.label, value: r.value }))
-        ),
-        details: cleanDetails,
-        detailSummary,
-        visionSummary: summarize(visionFields, vision),
-        commonSummary: summarize(commonDetailFields, common),
-        budget: budget.budget,
-        budgetLabel: BUDGETS.find((b) => b.value === budget.budget)?.label,
-        requestedDate: budget.requestedDate || null,
-        rushRequested: !!budget.rushRequested,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        email: contact.email,
-        phone: contact.phone || '',
-        preferredContactMethod: contact.preferredContactMethod,
-        agree: contact.agree,
-        inspiration: answers.inspiration || [],
-      });
+      const request = await submitCustomRequest({ itemTypes, answers, details, website: honeypot });
       localStorage.removeItem(DRAFT_KEY);
       navigate(`/custom-orders/success?ref=${request.requestId}`);
     } catch (err) {
       console.error(err);
-      toast('Your request couldn’t be sent. Check your connection and try again.');
+      toast(err.message || 'Your request couldn’t be sent. Please try again.');
+      if (err instanceof MissingFilesError) goTo(2);
       setSubmitting(false);
     }
   };
@@ -253,7 +216,14 @@ export default function CustomOrderPage() {
 
             {step === 4 && <Fields fields={budgetFields} values={answers} errors={errors.answers} onChange={setAnswer} />}
 
-            {step === 5 && <Fields fields={contactFields} values={answers} errors={errors.answers} onChange={setAnswer} twoCol />}
+            {step === 5 && (
+              <>
+                <Fields fields={contactFields} values={answers} errors={errors.answers} onChange={setAnswer} twoCol />
+                <div className="hp" aria-hidden="true">
+                  <label>Website<input tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></label>
+                </div>
+              </>
+            )}
 
             {step === REVIEW && review && <RequestReview review={review} onEdit={goTo} />}
 

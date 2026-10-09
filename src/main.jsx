@@ -9,8 +9,10 @@ import { CartProvider } from './context/CartContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import App from './App.jsx';
+import { initCatalog } from './services/catalog.js';
+import { initGallery } from './services/gallery.js';
 
-createRoot(document.getElementById('root')).render(
+const render = () => createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Router>
       <ToastProvider>
@@ -23,3 +25,5 @@ createRoot(document.getElementById('root')).render(
     </Router>
   </StrictMode>
 );
+
+Promise.all([initCatalog(), initGallery()]).finally(render);

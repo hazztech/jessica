@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, matchPath, useRouter } from '../lib/router.jsx';
-import { getSession, isAdmin, signInPreview, signOut, AUTH_PROVIDER } from '../services/auth.js';
+import { AUTH_PROVIDER, isAdmin, loadSession, onAuthChange, sendPasswordReset, signIn, signInPreview, signOut, updatePassword } from '../services/auth.js';
 import { listCustomRequests } from '../services/customRequests.js';
 import { listOrders } from '../services/orders.js';
 import { useLiveData } from './useLiveData.js';
@@ -33,7 +33,8 @@ const NAV = [
  * (see services/auth.js and netlify/functions/_lib/requireAdmin.js).
  */
 export default function AdminApp() {
-  const [session, setSession] = useState(getSession);
+  const [session, setSession] = useState(undefined); // undefined = checking
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
     const meta = document.createElement('meta');
@@ -43,30 +44,122 @@ export default function AdminApp() {
     return () => meta.remove();
   }, []);
 
-  if (!isAdmin(session)) return <SignIn onSignedIn={setSession} />;
-  return <AdminShell session={session} onSignOut={() => { signOut(); setSession(null); }} />;
+  useEffect(() => {
+    let live = true;
+    loadSession().then((s) => live && setSession(s));
+    const unsub = onAuthChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+      if (event === 'SIGNED_OUT') setSession(null);
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') loadSession().then((s) => live && setSession(s));
+    });
+    return () => { live = false; unsub(); };
+  }, []);
+
+  if (session === undefined) return <div className="admin-gate" aria-busy="true" />;
+  if (recovery) return <SetPassword onDone={async () => { setRecovery(false); setSession(await loadSession()); }} />;
+  if (!isAdmin(session)) return <SignIn onSignedIn={setSession} signedInAs={session?.user?.email} />;
+  return <AdminShell session={session} onSignOut={async () => { await signOut(); setSession(null); }} />;
 }
 
-function SignIn({ onSignedIn }) {
+function GateCard({ title, children }) {
   return (
     <div className="admin-gate">
       <div className="admin-gate__card">
         <Logo linked={false} size="footer" />
-        <h1>Admin sign-in</h1>
-        {AUTH_PROVIDER === 'preview' ? (
-          <>
-            <p>
-              Accounts are connected with the backend. Until then the dashboard runs in
-              <strong> preview mode</strong>: everything you change is stored only in this browser.
-            </p>
-            <Button full onClick={async () => onSignedIn(await signInPreview())}>Continue in Preview Mode</Button>
-          </>
-        ) : (
-          <p>Sign-in provider “{AUTH_PROVIDER}” is not configured yet.</p>
-        )}
+        <h1>{title}</h1>
+        {children}
         <Link to="/" className="admin-gate__back">Back to the store</Link>
       </div>
     </div>
+  );
+}
+
+function SignIn({ onSignedIn, signedInAs }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState('signin'); // signin | reset | sent
+  const [error, setError] = useState(signedInAs ? `${signedInAs} doesn’t have admin access.` : '');
+  const [busy, setBusy] = useState(false);
+
+  if (AUTH_PROVIDER === 'preview') {
+    return (
+      <GateCard title="Admin sign-in">
+        <p>
+          Accounts are connected with the backend. Until then the dashboard runs in
+          <strong> preview mode</strong>: everything you change is stored only in this browser.
+        </p>
+        <Button full onClick={async () => onSignedIn(await signInPreview())}>Continue in Preview Mode</Button>
+      </GateCard>
+    );
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      if (mode === 'reset') { await sendPasswordReset(email); setMode('sent'); }
+      else onSignedIn(await signIn(email, password));
+    } catch (err) {
+      setError(err.message);
+    }
+    setBusy(false);
+  };
+
+  if (mode === 'sent') {
+    return (
+      <GateCard title="Check your email">
+        <p>If <strong>{email}</strong> has an account, a link to set a new password is on its way.</p>
+        <Button full variant="secondary" onClick={() => setMode('signin')}>Back to sign in</Button>
+      </GateCard>
+    );
+  }
+
+  return (
+    <GateCard title={mode === 'reset' ? 'Reset your password' : 'Admin sign-in'}>
+      <form className="admin-signin" onSubmit={submit} noValidate>
+        <label className="cz-label" htmlFor="ad-email">Email</label>
+        <input id="ad-email" className="cz-input" type="email" inputMode="email" autoComplete="username" required
+          value={email} onChange={(e) => setEmail(e.target.value)} enterKeyHint={mode === 'reset' ? 'send' : 'next'} />
+        {mode === 'signin' && (
+          <>
+            <label className="cz-label" htmlFor="ad-pass">Password</label>
+            <input id="ad-pass" className="cz-input" type="password" autoComplete="current-password" required
+              value={password} onChange={(e) => setPassword(e.target.value)} enterKeyHint="go" />
+          </>
+        )}
+        {error && <p className="cz-error" role="alert">{error}</p>}
+        <Button type="submit" full disabled={busy || !email || (mode === 'signin' && !password)}>
+          {busy ? 'Please wait…' : mode === 'reset' ? 'Send reset link' : 'Sign in'}
+        </Button>
+        <button type="button" className="admin-signin__alt" onClick={() => { setError(''); setMode(mode === 'reset' ? 'signin' : 'reset'); }}>
+          {mode === 'reset' ? 'Back to sign in' : 'Forgot password?'}
+        </button>
+      </form>
+    </GateCard>
+  );
+}
+
+function SetPassword({ onDone }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (password.length < 10) { setError('Use at least 10 characters.'); return; }
+    setBusy(true);
+    try { await updatePassword(password); onDone(); } catch (err) { setError(err.message); setBusy(false); }
+  };
+  return (
+    <GateCard title="Set a new password">
+      <form className="admin-signin" onSubmit={submit} noValidate>
+        <label className="cz-label" htmlFor="ad-new">New password</label>
+        <input id="ad-new" className="cz-input" type="password" autoComplete="new-password" minLength={10}
+          value={password} onChange={(e) => setPassword(e.target.value)} />
+        {error && <p className="cz-error" role="alert">{error}</p>}
+        <Button type="submit" full disabled={busy}>{busy ? 'Saving…' : 'Save password'}</Button>
+      </form>
+    </GateCard>
   );
 }
 
@@ -128,6 +221,9 @@ function AdminShell({ session, onSignOut }) {
         </div>
       </aside>
       <main id="main" className="admin__main">
+        {session.provider === 'supabase' && (
+          <p className="admin-who">Signed in as {session.user.email}</p>
+        )}
         {session.provider === 'preview' && (
           <p className="admin-preview" role="note">
             Preview mode — changes are saved in this browser only until the backend is connected.

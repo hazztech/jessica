@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { money, stamp } from './useLiveData.js';
 import Button from '../components/Button.jsx';
 import OrderStatusPill from './OrderStatusPill.jsx';
+import { openCustomerFile } from '../services/uploads.js';
 
 const NEXT = { new: 'paid', paid: 'processing', processing: 'in-production', 'in-production': 'finishing', finishing: 'ready', ready: 'shipped', shipped: 'delivered' };
 
@@ -67,6 +68,16 @@ export default function AdminOrderDetail({ orderNumber }) {
                     <span className="od__cat">{getCategory(i.category)?.name}</span>
                     {i.summary?.length > 0 && (
                       <dl className="od__opts">{i.summary.map((s) => <div key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></div>)}</dl>
+                    )}
+                    {i.uploads?.some((u) => u.path) && (
+                      <div className="od__files">
+                        {i.uploads.filter((u) => u.path).map((u) => (
+                          <button key={u.path} type="button" className="atable__btn"
+                            onClick={() => openCustomerFile(u.path).catch((e) => toast(e.message))}>
+                            {u.fileName || 'Customer file'} ↗
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                   <span className="od__qty">{i.quantity} × {money(i.unitPrice)}</span>

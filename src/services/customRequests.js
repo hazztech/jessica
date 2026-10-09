@@ -1,21 +1,18 @@
 /**
  * Custom Request service.
- *
- * FRONT-END PHASE: requests are stored in this browser's localStorage so the
- * whole flow (submit → admin dashboard) can be tested without a backend.
- *
- * PRODUCTION: replace the bodies of these functions with calls to a Netlify
- * Function (e.g. /.netlify/functions/custom-requests) that
- *   1. validates and sanitizes every field again on the server,
- *   2. uploads files to cloud storage and stores { url, fileName, fileType, fileSize, uploadDate },
- *   3. generates the request number server-side (guaranteed unique),
- *   4. inserts into the customRequests + customRequestImages tables,
- *   5. emails Jessica and the customer.
- * The function signatures below stay the same, so no UI changes are needed.
+ *   Preview: requests are stored in this browser so the flow can be tested offline.
+ *   Live:    files upload to the private `customer-uploads` bucket via signed URLs,
+ *            then /api/custom-requests validates and saves everything server-side.
+ *            Admins read/update through Supabase (Row Level Security: admins only).
  */
 import { getFile } from '../lib/uploadStore.js';
+import { BACKEND, api, check, stash, supabase } from '../lib/backend.js';
+import { buildRequestRecord } from '../lib/customRequest.js';
+import { requestFromRow } from '../lib/mappers.js';
+import { uploadCustomerFiles } from './uploads.js';
 
 const KEY = 'jcsa-custom-requests-v1';
+const SELECT = '*, custom_request_images(*), custom_request_status_history(*)';
 
 export const REQUEST_STATUSES = [
   { id: 'new', label: 'New Request' },
@@ -34,31 +31,23 @@ export const REQUEST_STATUSES = [
 ];
 export const statusLabel = (id) => REQUEST_STATUSES.find((s) => s.id === id)?.label || id;
 export const CLOSED_STATUSES = ['completed', 'cancelled'];
+/** Fired after admin changes so counts/badges refresh */
+export const REQUESTS_CHANGED = 'jcsa:requests-changed';
 
+/* ---------- preview storage ---------- */
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-
 function readAll() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || '[]');
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
 }
-function writeAll(list) {
-  localStorage.setItem(KEY, JSON.stringify(list));
-}
+function writeAll(list) { localStorage.setItem(KEY, JSON.stringify(list)); }
 
-/** JCSA-XXXXX — five digits, unique among existing requests */
 export function makeRequestNumber(existing = readAll()) {
   const taken = new Set(existing.map((r) => r.requestId));
   let id;
-  do {
-    id = `JCSA-${Math.floor(10000 + Math.random() * 90000)}`;
-  } while (taken.has(id));
+  do { id = `JCSA-${Math.floor(10000 + Math.random() * 90000)}`; } while (taken.has(id));
   return id;
 }
 
-/** Small preview so the demo dashboard can show images after a reload */
 async function thumbnail(file, size = 360) {
   try {
     const bmp = await createImageBitmap(file);
@@ -74,68 +63,107 @@ async function thumbnail(file, size = 360) {
 }
 
 /**
- * Submit a request. `payload` is the cleaned wizard output (see CustomOrderPage).
- * Returns the saved request including its requestId.
+ * Submit raw wizard answers: { itemTypes, answers, details }.
+ * Returns { requestId, firstName, itemTypes, preferredContactMethod, email, phone }.
  */
-export async function submitCustomRequest(payload) {
-  const now = new Date().toISOString();
-  const images = await Promise.all(
-    (payload.inspiration || []).map(async (meta) => {
-      const file = getFile(meta.id);
-      return {
-        id: meta.id,
-        url: null, // set by cloud storage in production
-        fileName: meta.name,
-        fileType: meta.type,
-        fileSize: meta.size,
-        uploadDate: now,
-        thumbUrl: file ? await thumbnail(file) : null,
-      };
-    })
-  );
+export async function submitCustomRequest({ itemTypes, answers, details, website = '' }) {
+  const inspiration = answers.inspiration || [];
 
+  if (BACKEND) {
+    const files = await uploadCustomerFiles('request', inspiration);
+    const res = await api('custom-requests', {
+      itemTypes, details, website,
+      answers: { ...answers, inspiration: undefined },
+      files: files ? { folder: files.folder, token: files.token, items: files.items } : null,
+    });
+    const summary = { ...res, requestId: res.requestNumber };
+    stash.set('last-request', summary);
+    return summary;
+  }
+
+  const { record, errors } = buildRequestRecord({ itemTypes, answers, details });
+  if (errors) {
+    const err = new Error('Please check the highlighted fields.');
+    err.details = errors;
+    throw err;
+  }
+  const now = new Date().toISOString();
+  const images = await Promise.all(inspiration.map(async (meta) => {
+    const file = getFile(meta.id);
+    return {
+      id: meta.id, url: null, fileName: meta.name, fileType: meta.type, fileSize: meta.size,
+      uploadDate: now, thumbUrl: file ? await thumbnail(file) : null,
+    };
+  }));
   const all = readAll();
-  const { inspiration, agree, ...rest } = payload;
   const request = {
-    ...rest,
+    ...record,
     requestId: makeRequestNumber(all),
     customerId: null,
-    customerName: `${payload.firstName} ${payload.lastName}`.trim(),
+    customerName: `${record.firstName} ${record.lastName}`.trim(),
     uploadedImages: images,
-    acknowledgedPricingTerms: !!agree,
-    adminNotes: '',
-    quotedPrice: null,
-    depositAmount: null,
-    status: 'new',
-    statusHistory: [{ status: 'new', at: now }],
-    createdAt: now,
-    updatedAt: now,
+    adminNotes: '', quotedPrice: null, depositAmount: null,
+    status: 'new', statusHistory: [{ status: 'new', at: now }],
+    createdAt: now, updatedAt: now,
   };
-
-  await delay(500); // simulate network
+  await delay(500);
   try {
     writeAll([request, ...all]);
   } catch {
-    // storage full — keep the request, drop demo thumbnails
     writeAll([{ ...request, uploadedImages: images.map((i) => ({ ...i, thumbUrl: null })) }, ...all]);
   }
   return request;
 }
 
 export async function listCustomRequests({ status } = {}) {
-  const all = readAll();
+  let all;
+  if (BACKEND) {
+    const sb = await supabase();
+    all = check(await sb.from('custom_requests').select(SELECT).order('created_at', { ascending: false }), 'Could not load requests').map(requestFromRow);
+  } else {
+    all = readAll();
+  }
   if (!status || status === 'all') return all;
   if (status === 'open') return all.filter((r) => r.status !== 'new' && !CLOSED_STATUSES.includes(r.status));
   if (status === 'closed') return all.filter((r) => CLOSED_STATUSES.includes(r.status));
   return all.filter((r) => r.status === status);
 }
 
+/** Admin detail. Live mode attaches short-lived signed URLs for the private images. */
 export async function getCustomRequest(requestId) {
-  return readAll().find((r) => r.requestId === requestId) || null;
+  if (!BACKEND) return readAll().find((r) => r.requestId === requestId) || null;
+  const sb = await supabase();
+  const row = check(await sb.from('custom_requests').select(SELECT).eq('request_number', requestId).maybeSingle(), 'Could not load the request');
+  if (!row) return null;
+  const req = requestFromRow(row);
+  const paths = req.uploadedImages.map((i) => i.path);
+  if (paths.length) {
+    const { data } = await sb.storage.from('customer-uploads').createSignedUrls(paths, 3600);
+    const byPath = new Map((data || []).map((d) => [d.path, d.signedUrl]));
+    req.uploadedImages = req.uploadedImages.map((i) => ({ ...i, url: byPath.get(i.path) || null }));
+  }
+  return req;
+}
+
+/** The success page reads this (shoppers can't read requests from the database). */
+export async function getSubmittedRequest(requestId) {
+  const last = stash.get('last-request');
+  if (last?.requestId === requestId) return last;
+  return BACKEND ? null : getCustomRequest(requestId);
 }
 
 /** Admin updates: status, adminNotes, quotedPrice, depositAmount */
 export async function updateCustomRequest(requestId, patch) {
+  if (BACKEND) {
+    const sb = await supabase();
+    const row = {};
+    if (patch.status) row.status = patch.status;
+    if ('adminNotes' in patch) row.admin_notes = patch.adminNotes;
+    if ('quotedPrice' in patch) row.quoted_price = patch.quotedPrice;
+    if ('depositAmount' in patch) row.deposit_amount = patch.depositAmount;
+    check(await sb.from('custom_requests').update(row).eq('request_number', requestId), 'Could not update the request');
+    return getCustomRequest(requestId);
+  }
   const all = readAll();
   const now = new Date().toISOString();
   let updated = null;
@@ -143,8 +171,7 @@ export async function updateCustomRequest(requestId, patch) {
     if (r.requestId !== requestId) return r;
     const statusChanged = patch.status && patch.status !== r.status;
     updated = {
-      ...r,
-      ...patch,
+      ...r, ...patch,
       statusHistory: statusChanged ? [...r.statusHistory, { status: patch.status, at: now }] : r.statusHistory,
       updatedAt: now,
     };
@@ -155,8 +182,10 @@ export async function updateCustomRequest(requestId, patch) {
 }
 
 export async function countNewRequests() {
+  if (BACKEND) {
+    const sb = await supabase();
+    const { count } = await sb.from('custom_requests').select('id', { count: 'exact', head: true }).eq('status', 'new');
+    return count || 0;
+  }
   return readAll().filter((r) => r.status === 'new').length;
 }
-
-/** Fired after admin changes so counts/badges refresh */
-export const REQUESTS_CHANGED = 'jcsa:requests-changed';

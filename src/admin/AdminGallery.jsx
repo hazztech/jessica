@@ -97,7 +97,7 @@ export default function AdminGallery() {
         footer={<div className="confirm__actions"><Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button><Button onClick={save}>{editing?.id ? 'Save changes' : 'Add to gallery'}</Button></div>}>
         {editing && (
           <div className="gal-form">
-            <ImageManager value={editing.images} max={6} label="Photos"
+            <ImageManager value={editing.images} max={6} label="Photos" bucket="gallery"
               onChange={(images) => { setEditing({ ...editing, images }); setErrors((e) => ({ ...e, images: undefined })); }}
               altHint="e.g. Mint crystal sneakers with satin bows" />
             {errors.images && <p className="cz-error" role="alert">{errors.images}</p>}

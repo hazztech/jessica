@@ -1,16 +1,40 @@
 /**
- * Product catalog service (products, productImages, productCustomizationOptions).
- * Preview mode: stored in this browser. Production: swap for API calls.
+ * Product catalog service.
+ *   Preview: stored in this browser (seeded from data/seedProducts.js).
+ *   Live:    Supabase `products` + `product_images`. The storefront reads a cache
+ *            loaded once at startup (initCatalog) so pages stay instant.
  */
 import { collection, uid } from '../lib/localDb.js';
+import { BACKEND, check, supabase } from '../lib/backend.js';
+import { productFromRow, productImageRows, productToRow } from '../lib/mappers.js';
 import { seedProducts } from '../data/seedProducts.js';
 
 export const LOW_STOCK_DEFAULT = 3;
+const SELECT = '*, product_images(*)';
 
-// v2: catalog rebuilt around Jessica's product photography
-export const catalog = collection('jcsa-catalog-v2', () =>
-  seedProducts.map((p) => ({ archived: false, lowStockThreshold: LOW_STOCK_DEFAULT, ...p }))
-);
+const local = collection('jcsa-catalog-v2', () =>
+  seedProducts.map((p) => ({ archived: false, lowStockThreshold: LOW_STOCK_DEFAULT, ...p })));
+
+let cache = null;
+const announce = () => window.dispatchEvent(new CustomEvent('jcsa:data', { detail: 'catalog' }));
+
+/** Synchronous access used by storefront pages */
+export const catalog = {
+  all: () => (BACKEND ? cache || [] : local.all()),
+  get: (id) => catalog.all().find((p) => p.id === id) || null,
+};
+
+/** Load the catalog before the first render (live mode). Falls back to seed data if offline. */
+export async function initCatalog() {
+  if (!BACKEND) return;
+  try {
+    const sb = await supabase();
+    cache = check(await sb.from('products').select(SELECT).order('created_at', { ascending: false })).map(productFromRow);
+  } catch (err) {
+    console.error('Catalog unavailable, showing built-in products', err);
+    cache = seedProducts;
+  }
+}
 
 export const slugify = (s) =>
   String(s).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
@@ -25,12 +49,24 @@ export function blankProduct() {
     inventory: null, lowStockThreshold: LOW_STOCK_DEFAULT,
     sizes: [], colors: [], occasions: [], popularity: 0,
     estimatedProductionTime: '1–2 weeks',
-    customization: {}, createdAt: now, updatedAt: now,
+    customization: {}, createdAt: now, updatedAt: now, isNew: true,
   };
 }
 
-export async function listProducts() { return catalog.all(); }
-export async function getProduct(id) { return catalog.get(id); }
+/** Admin list — includes hidden and archived products (RLS allows admins to see them) */
+export async function listProducts() {
+  if (!BACKEND) return local.all();
+  const sb = await supabase();
+  cache = check(await sb.from('products').select(SELECT).order('created_at', { ascending: false }), 'Could not load products').map(productFromRow);
+  return cache;
+}
+
+export async function getProduct(id) {
+  if (!BACKEND) return local.get(id);
+  const sb = await supabase();
+  const row = check(await sb.from('products').select(SELECT).eq('id', id).maybeSingle(), 'Could not load the product');
+  return row ? productFromRow(row) : null;
+}
 
 export function validateProduct(p, all = catalog.all()) {
   const e = {};
@@ -50,9 +86,10 @@ export function validateProduct(p, all = catalog.all()) {
   return e;
 }
 
-export async function saveProduct(p) {
-  const clean = {
-    ...p,
+function normalize(p) {
+  const { isNew, ...rest } = p;
+  return {
+    ...rest,
     name: p.name.trim(),
     slug: p.slug ? slugify(p.slug) : slugify(p.name),
     price: Math.round(Number(p.price) * 100) / 100,
@@ -60,15 +97,50 @@ export async function saveProduct(p) {
     inventory: p.inventory === '' || p.inventory == null ? null : Number(p.inventory),
     updatedAt: new Date().toISOString(),
   };
-  return catalog.upsert(clean);
+}
+
+export async function saveProduct(p) {
+  const clean = normalize(p);
+  if (!BACKEND) return local.upsert(clean);
+  const sb = await supabase();
+  try {
+    check(await sb.from('products').upsert(productToRow(clean)), 'Could not save the product');
+  } catch (err) {
+    if (err.code === '23505') throw new Error('Another product already uses this web address.');
+    throw err;
+  }
+  check(await sb.from('product_images').delete().eq('product_id', clean.id), 'Could not update photos');
+  if (clean.images?.length) check(await sb.from('product_images').insert(productImageRows(clean.id, clean.images)), 'Could not save photos');
+  const saved = await getProduct(clean.id);
+  await listProducts();
+  announce();
+  return saved;
 }
 
 export async function setArchived(id, archived) {
-  const p = catalog.get(id);
-  return catalog.upsert({ ...p, archived, active: archived ? false : p.active, updatedAt: new Date().toISOString() });
+  if (!BACKEND) {
+    const p = local.get(id);
+    return local.upsert({ ...p, archived, active: archived ? false : p.active, updatedAt: new Date().toISOString() });
+  }
+  const sb = await supabase();
+  const patch = archived ? { archived: true, active: false } : { archived: false };
+  check(await sb.from('products').update(patch).eq('id', id), 'Could not update the product');
+  const saved = await getProduct(id);
+  await listProducts();
+  announce();
+  return saved;
 }
 
-export async function deleteProduct(id) { catalog.remove(id); }
+export async function deleteProduct(id) {
+  if (!BACKEND) return local.remove(id);
+  const sb = await supabase();
+  const p = await getProduct(id);
+  check(await sb.from('products').delete().eq('id', id), 'Could not delete the product');
+  const paths = (p?.images || []).filter((i) => i.path).flatMap((i) => [i.path, i.path.replace(/\.(\w+)$/, '-600.$1')]);
+  if (paths.length) await sb.storage.from('product-images').remove(paths);
+  await listProducts();
+  announce();
+}
 
 export const isLowStock = (p) =>
   !p.archived && p.inventory != null && p.inventory <= (p.lowStockThreshold ?? LOW_STOCK_DEFAULT);

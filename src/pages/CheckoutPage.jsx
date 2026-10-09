@@ -15,7 +15,7 @@ import './CheckoutPage.css';
 
 export default function CheckoutPage() {
   const cart = useCart();
-  const { navigate } = useRouter();
+  const { navigate, query } = useRouter();
   const toast = useToast();
   const [contact, setContact] = useState(() => defaultValues(contactFields));
   const [ship, setShip] = useState(() => defaultValues(shippingFields));
@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   const redeem = async (e) => {
     e.preventDefault();
     setCodeError('');
-    try { setCoupon(await applyCoupon(code)); setCode(''); } catch (err) { setCodeError(err.message); }
+    try { setCoupon(await applyCoupon(code, cart.subtotal)); setCode(''); } catch (err) { setCodeError(err.message); }
   };
 
   const submit = async (e) => {
@@ -72,19 +72,24 @@ export default function CheckoutPage() {
     setPlacing(true);
     try {
       const shippingAddress = cleanSelections(shippingFields, ship);
-      const order = await placeOrder({
+      const result = await placeOrder({
         items: cart.items,
         contact: cleanSelections(contactFields, contact),
         shippingAddress,
         billingAddress: sameBilling ? shippingAddress : cleanSelections(billingFields, bill),
+        sameBilling,
         shippingMethod: method,
         coupon,
       });
+      if (result.redirectUrl) {
+        window.location.assign(result.redirectUrl); // Stripe Checkout; cart clears on return
+        return;
+      }
       cart.clear();
-      navigate(`/checkout/confirmation?order=${order.orderNumber}`);
+      navigate(`/checkout/confirmation?order=${result.order.orderNumber}`);
     } catch (err) {
       console.error(err);
-      toast('Your order couldn’t be placed. Please try again.');
+      toast(err.message || 'Your order couldn’t be placed. Please try again.', { duration: 6000 });
       setPlacing(false);
     }
   };
@@ -93,6 +98,7 @@ export default function CheckoutPage() {
     <form className="ck" onSubmit={submit} noValidate>
       <div className="container ck__col">
         <h1 className="ck__title">Checkout</h1>
+        {query.get('cancelled') && <p className="ck__notice" role="status">Payment was cancelled — your cart is still here whenever you’re ready.</p>}
 
         {/* Order summary — collapsed on phones */}
         <details className="ck__summary">

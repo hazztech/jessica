@@ -370,3 +370,8 @@ s.atable__sub { display: inline; }
 /* contain absolutely-positioned screen-reader text inside scrolling areas */
 .atable-wrap, .admin-tabs, .admin__side nav, .admin__link, .admin__badge { position: relative; }
 .atable td, .atable tbody th { white-space: nowrap; }
+.admin-signin { display: grid; gap: var(--space-2); width: 100%; text-align: left; }
+.admin-signin .btn { margin-top: var(--space-3); }
+.admin-signin__alt { justify-self: center; min-height: 44px; border: 0; background: none; color: var(--teal-800); font-size: var(--fs-sm); text-decoration: underline; }
+.admin-who { margin-bottom: var(--space-3); font-size: var(--fs-xs); color: var(--ink-soft); }
+.od__files { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--space-2); } .od__files .atable__btn + .atable__btn { margin-left: 0; }

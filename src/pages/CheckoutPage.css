@@ -92,3 +92,4 @@
 .ck__done-heart { position: absolute; top: -30px; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: var(--white); box-shadow: 0 0 0 1px var(--silver-200); }
 .ck__done-num strong { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; color: var(--teal-800); }
 .ck__done-items { width: 100%; display: grid; gap: var(--space-2); margin-block: var(--space-3); text-align: left; font-size: var(--fs-sm); }
+.ck__notice { padding: var(--space-3) var(--space-4); border-radius: 12px; background: #FFF6E5; color: #7A4B00; font-size: var(--fs-sm); }

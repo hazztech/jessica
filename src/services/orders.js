@@ -1,11 +1,17 @@
 /**
  * Order service (orders, orderItems).
- * Checkout isn't connected yet, so the preview starts with SAMPLE orders
+ * LIVE MODE: orders are created by the /api/checkout function and read/updated
+ * here by admins through Supabase (protected by Row Level Security).
+ * PREVIEW MODE: the preview starts with SAMPLE orders
  * (flagged `sample: true`) to demonstrate order management. Remove them from
  * Admin → Orders → "Remove sample orders". Real orders will come from Stripe
  * checkout via a Netlify Function.
  */
 import { collection } from '../lib/localDb.js';
+import { BACKEND, check, supabase } from '../lib/backend.js';
+import { orderFromRow } from '../lib/mappers.js';
+
+const SELECT = '*, order_items(*), order_status_history(*)';
 
 export const ORDER_STATUSES = [
   { id: 'new', label: 'New' },
@@ -62,13 +68,33 @@ function sampleOrders() {
 const db = collection('jcsa-orders-v2', sampleOrders);
 
 export async function listOrders({ status } = {}) {
+  if (BACKEND) {
+    const sb = await supabase();
+    let q = sb.from('orders').select(SELECT).order('created_at', { ascending: false });
+    if (status && status !== 'all') q = q.eq('status', status);
+    return check(await q, 'Could not load orders').map(orderFromRow);
+  }
   const all = db.all().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   if (!status || status === 'all') return all;
   return all.filter((o) => o.status === status);
 }
-export async function getOrder(orderNumber) { return db.get(orderNumber, 'orderNumber'); }
+export async function getOrder(orderNumber) {
+  if (!BACKEND) return db.get(orderNumber, 'orderNumber');
+  const sb = await supabase();
+  const row = check(await sb.from('orders').select(SELECT).eq('order_number', orderNumber).maybeSingle(), 'Could not load the order');
+  return row ? orderFromRow(row) : null;
+}
 
 export async function updateOrder(orderNumber, patch) {
+  if (BACKEND) {
+    const sb = await supabase();
+    const row = {};
+    if (patch.status) row.status = patch.status;
+    if ('trackingNumber' in patch) row.tracking_number = patch.trackingNumber;
+    if ('notes' in patch) row.notes = patch.notes;
+    check(await sb.from('orders').update(row).eq('order_number', orderNumber), 'Could not update the order');
+    return getOrder(orderNumber); // status history is written by a database trigger
+  }
   const o = db.get(orderNumber, 'orderNumber');
   const now = new Date().toISOString();
   const changed = patch.status && patch.status !== o.status;
@@ -80,13 +106,14 @@ export async function updateOrder(orderNumber, patch) {
 }
 
 export async function removeSampleOrders() {
+  if (BACKEND) return;
   db.replaceAll(db.all().filter((o) => !o.sample));
 }
 
 export const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString();
 export const countsAsRevenue = (o) => o.paymentStatus === 'paid' && o.status !== 'cancelled';
 
-/** Create an order (checkout). Order numbers continue from the highest existing one. */
+/** Preview-mode order creation (live orders are created by /api/checkout). */
 export async function createOrder(data) {
   const all = db.all();
   const max = all.reduce((m, o) => Math.max(m, Number(String(o.orderNumber).replace(/\D/g, '')) || 0), 1000);
